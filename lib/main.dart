@@ -8,7 +8,7 @@ import 'package:retailprostaff/viewmodel/login_viewmodel.dart';
 import 'package:retailprostaff/viewmodel/order_viewmodel.dart';
 import 'package:retailprostaff/viewmodel/products_viewmodel.dart';
 import 'package:retailprostaff/viewmodel/profile_viewmodel.dart';
-import 'package:retailprostaff/viewmodel/sales_viewmodel.dart';
+import 'package:retailprostaff/viewmodel/viewbill_viewmodel.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'Supabase/Supabaseini.dart';
@@ -65,11 +65,11 @@ class Proclass extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (context) =>
-              AddtobillViewmodel(),
+              ViewbillViewmodel(),
         ),
         ChangeNotifierProvider(
           create: (context) =>
-              SalesViewmodel(),
+              AddtobillViewmodel(),
         ),
         ChangeNotifierProvider(
           create: (context) =>

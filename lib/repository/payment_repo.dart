@@ -1,48 +1,33 @@
-import 'package:razorpay_flutter/razorpay_flutter.dart';
-
 import '../services/payment_services.dart';
 
-class PaymentRepository {
-  final PaymentServices _services =
-  PaymentServices();
+class PaymentRepo {
+  final PaymentServices service = PaymentServices();
 
-  void initializeRazorpay({
-    required Function(PaymentSuccessResponse) success,
-    required Function(PaymentFailureResponse) error,
-    required Function(ExternalWalletResponse) wallet,
-  }) {
-    _services.initializeRazorpay(
-      success: success,
-      error: error,
-      wallet: wallet,
-    );
-  }
-
-  Future<void> addSale(
-      Map<String, dynamic> data,
-      ) async {
-    await _services.addSale(
-      data,
+  Future<void> addSale({
+    required String billNo,
+    required String customerName,
+    required String customerMobile,
+    required List<Map<String, dynamic>> cart,
+    required double totalAmount,
+    required String paymentMethod,
+    required String paymentId,
+  }) async {
+    await service.addSale(
+      billNo: billNo,
+      customerName: customerName,
+      customerMobile: customerMobile,
+      cart: cart,
+      totalAmount: totalAmount,
+      paymentMethod: paymentMethod,
+      paymentId: paymentId,
     );
   }
 
   Future<void> updateStock(
       List<Map<String, dynamic>> cart,
       ) async {
-    await _services.updateStock(
+    await service.updateStock(
       cart,
     );
-  }
-
-  void openRazorpay(
-      Map<String, dynamic> options,
-      ) {
-    _services.openRazorpay(
-      options,
-    );
-  }
-
-  void clearRazorpay() {
-    _services.clearRazorpay();
   }
 }

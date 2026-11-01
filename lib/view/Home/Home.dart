@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:retailprostaff/view/sales/Sales.dart';
 import '../../viewmodel/home_viewmodel.dart';
 import '../Orders/Orders.dart';
 import '../Products/Products.dart';
 import '../Profile/Profile.dart';
-import '../Sale/Sales.dart';
 class Hom extends StatefulWidget {
   Hom({
     super.key,

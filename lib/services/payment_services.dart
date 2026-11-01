@@ -1,72 +1,75 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 class PaymentServices {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final CollectionReference<Map<String, dynamic>> sales =
+  FirebaseFirestore.instance.collection('sales');
 
-  late final CollectionReference<Map<String, dynamic>> sales =
-  _firestore.collection('sales');
+  final CollectionReference<Map<String, dynamic>> products =
+  FirebaseFirestore.instance.collection('productsdata');
 
-  late final CollectionReference<Map<String, dynamic>> products =
-  _firestore.collection('productsdata');
+  Future<void> addSale({
+    required String billNo,
+    required String customerName,
+    required String customerMobile,
+    required List<Map<String, dynamic>> cart,
+    required double totalAmount,
+    required String paymentMethod,
+    required String paymentId,
+  }) async {
+    final data = {
+      "customerName": customerName,
+      "customerMobile": customerMobile,
+      "items": cart,
+      "totalAmount": totalAmount,
+      "paymentMethod": paymentMethod,
+      "paymentId": paymentId,
+      "paymentStatus": "Paid",
+      "date": FieldValue.serverTimestamp(),
+      "billno": billNo,
+    };
 
-  final Razorpay razorpay = Razorpay();
-
-  void initializeRazorpay({
-    required Function(PaymentSuccessResponse) success,
-    required Function(PaymentFailureResponse) error,
-    required Function(ExternalWalletResponse) wallet,
-  }) {
-    razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, success);
-    razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, error);
-    razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, wallet);
+    await sales.add(data);
   }
 
-  Future<DocumentReference<Map<String, dynamic>>> addSale(
-      Map<String, dynamic> data,
+  Future<void> updateStock(
+      List<Map<String, dynamic>> cart,
       ) async {
-    return await sales.add(data);
-  }
+    for (var item in cart) {
+      String id = item['id']?.toString() ?? "";
 
-  /// Updates inventory stock atomically using Firestore transactions/batches
-  /// to prevent race conditions and ensure all item updates succeed together.
-  Future<void> updateStock(List<Map<String, dynamic>> cart) async {
-    final WriteBatch batch = _firestore.batch();
+      if (id.isEmpty) {
+        continue;
+      }
 
-    for (final item in cart) {
-      final String? productId = item['id']?.toString();
-      if (productId == null || productId.isEmpty) continue;
+      var product = await products.doc(id).get();
 
-      final DocumentReference<Map<String, dynamic>> productRef =
-      products.doc(productId);
+      if (!product.exists) {
+        continue;
+      }
 
-      final DocumentSnapshot<Map<String, dynamic>> snapshot =
-      await productRef.get();
+      var data = product.data();
 
-      if (!snapshot.exists || snapshot.data() == null) continue;
+      if (data == null) {
+        continue;
+      }
 
-      final int currentQty = int.tryParse(
-        snapshot.data()?['pquantity']?.toString() ?? '0',
-      ) ??
-          0;
+      double currentQty = double.tryParse(
+        data['pquantity'].toString(),
+      ) ?? 0;
 
-      final int soldQty = int.tryParse(item['qty']?.toString() ?? '0') ?? 0;
-      final int newQty = (currentQty - soldQty).clamp(0, double.infinity).toInt();
+      double soldQty = double.tryParse(
+        item['qty'].toString(),
+      ) ?? 0;
 
-      batch.update(productRef, {
+      double newQty = currentQty - soldQty;
+
+      if (newQty < 0) {
+        newQty = 0;
+      }
+
+      await products.doc(id).update({
         'pquantity': newQty.toString(),
-        'updatedAt': FieldValue.serverTimestamp(),
       });
     }
-
-    await batch.commit();
-  }
-
-  void openRazorpay(Map<String, dynamic> options) {
-    razorpay.open(options);
-  }
-
-  void clearRazorpay() {
-    razorpay.clear();
   }
 }

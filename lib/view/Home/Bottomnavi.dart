@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:retailprostaff/view/sales/Sales.dart';
 
 import '../Orders/Orders.dart';
 import '../Products/Products.dart';
-import '../Sale/Sales.dart';
 import 'Home.dart';
 class Bottomnaviga extends StatefulWidget {
   const Bottomnaviga({super.key});

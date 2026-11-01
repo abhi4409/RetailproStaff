@@ -1,288 +1,171 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../models/payment_models.dart';
 import '../repository/payment_repo.dart';
-import '../view/Sale/Genere.dart';
 
-class PaymentViewmodel
-    extends ChangeNotifier {
-  late PaymentModels _model;
+class PaymentViewmodel extends ChangeNotifier {
+  final PaymentRepo repo = PaymentRepo();
 
-  final PaymentRepository _repository = PaymentRepository();
+  final String billNo;
+  final String customerName;
+  final String customerMobile;
+  final List<Map<String, dynamic>> cart;
+  final double totalAmount;
+
+  final VoidCallback onSuccess;
+  final VoidCallback onError;
+  final VoidCallback onExternalWallet;
+
+  PaymentModels model = PaymentModels();
+
+  late Razorpay razorpay;
+
+  DateTime now = DateTime.now();
 
   PaymentViewmodel({
-    required String billNo,
-    required String customerName,
-    required String customerMobile,
-    required List<Map<String, dynamic>> cart,
-    required double totalAmount,
+    required this.billNo,
+    required this.customerName,
+    required this.customerMobile,
+    required this.cart,
+    required this.totalAmount,
+    required this.onSuccess,
+    required this.onError,
+    required this.onExternalWallet,
   }) {
-    _model =
-        PaymentModels(
-          billNo: billNo,
-          customerName: customerName,
-          customerMobile:
-          customerMobile,
-          cart: cart,
-          totalAmount:
-          totalAmount,
-        );
-  }
+    razorpay = Razorpay();
+    razorpay.on(
+      Razorpay.EVENT_PAYMENT_SUCCESS,
+      paymentSuccess,
+    );
 
-  String get billNo =>
-      _model.billNo;
-
-  String get customerName =>
-      _model.customerName;
-
-  String get customerMobile =>
-      _model.customerMobile;
-
-  List<Map<String, dynamic>>
-  get cart =>
-      _model.cart;
-
-  double get totalAmount =>
-      _model.totalAmount;
-
-  String get paymentMethod =>
-      _model.paymentMethod;
-
-  DateTime get now =>
-      _model.now;
-
-  void initializeRazorpay(
-      BuildContext context,
-      ) {
-    _repository.initializeRazorpay(
-      success:
-          (PaymentSuccessResponse response) {
-        paymentSuccess(
-          context,
-          response,
-        );
-      },
-      error:
-          (PaymentFailureResponse response) {
-        paymentError(
-          context,
-          response,
-        );
-      },
-      wallet:
-          (ExternalWalletResponse response) {
-        externalWallet(
-          context,
-          response,
-        );
-      },
+    razorpay.on(
+      Razorpay.EVENT_PAYMENT_ERROR,
+      paymentError,
+    );
+    razorpay.on(
+      Razorpay.EVENT_EXTERNAL_WALLET,
+      externalWallet,
     );
   }
-
-  void selectPaymentMethod(
+  String get paymentMethod {
+    return model.paymentMethod;
+  }
+  bool get loading {
+    return model.loading;
+  }
+  void changePayment(
       String value,
       ) {
-    _model.paymentMethod =
-        value;
-
+    model.paymentMethod = value;
     notifyListeners();
   }
-
-  Future updateStock() async {
-    await _repository.updateStock(
-      _model.cart,
-    );
+  void changeLoading(
+      bool value,
+      ) {
+    model.loading = value;
+    notifyListeners();
   }
-
-  Future addSale(
+  Future<void> addSale(
       String paymentId,
       ) async {
-    final data = {
-      "customerName":
-      _model.customerName,
-      "customerMobile":
-      _model.customerMobile,
-      "items":
-      _model.cart,
-      "totalAmount":
-      _model.totalAmount,
-      "paymentMethod":
-      _model.paymentMethod,
-      "paymentId":
-      paymentId,
-      "paymentStatus":
-      "Paid",
-      "date":
-      FieldValue.serverTimestamp(),
-      "billno":
-      _model.billNo,
-    };
-
-    await _repository.addSale(
-      data,
+    await repo.addSale(
+      billNo: billNo,
+      customerName: customerName,
+      customerMobile: customerMobile,
+      cart: cart,
+      totalAmount: totalAmount,
+      paymentMethod: paymentMethod,
+      paymentId: paymentId,
     );
   }
-
+  Future<void> updateStock() async {
+    await repo.updateStock(
+      cart,
+    );
+  }
   void openRazorpay() {
     var options = {
-      'key':
-      'rzp_test_To455asUanujcj',
-      'amount':
-      (_model.totalAmount * 100)
-          .round(),
-      'currency':
-      'INR',
-      'name':
-      'Retail Pro',
-      'description':
-      'Bill ${_model.billNo}',
+      'key': 'rzp_test_To455asUanujcj',
+      'amount': (totalAmount * 100).round(),
+      'currency': 'INR',
+      'name': 'Retail Pro',
+      'description': 'Bill $billNo',
       'prefill': {
-        'contact':
-        _model.customerMobile,
+        'contact': customerMobile,
       },
     };
-
     try {
-      _repository.openRazorpay(
+      razorpay.open(
         options,
       );
     } catch (e) {
-      print(e);
+      onError();
     }
   }
-
-  Future paymentSuccess(
-      BuildContext context,
+  Future<void> paymentSuccess(
       PaymentSuccessResponse response,
       ) async {
-    await addSale(
-      response.paymentId ?? "",
-    );
+    try {
+      changeLoading(
+        true,
+      );
+      await addSale(
+        response.paymentId ?? "",
+      );
 
-    await updateStock();
+      await updateStock();
 
-    if (!context.mounted) {
-      return;
+      onSuccess();
+    } catch (e) {
+      onError();
+    } finally {
+      changeLoading(
+        false,
+      );
     }
-
-    ScaffoldMessenger.of(context)
-        .showSnackBar(
-      SnackBar(
-        backgroundColor:
-        Colors.green,
-        content: Text(
-          "Payment completed successfully",
-        ),
-      ),
-    );
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            Bill(
-              billNo:
-              _model.billNo,
-              customerName:
-              _model.customerName,
-              customerMobile:
-              _model.customerMobile,
-              cart:
-              _model.cart,
-              totalAmount:
-              _model.totalAmount,
-              paymentMethod:
-              _model.paymentMethod,
-            ),
-      ),
-    );
   }
-
   void paymentError(
-      BuildContext context,
       PaymentFailureResponse response,
       ) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(
-      SnackBar(
-        backgroundColor:
-        Colors.red,
-        content: Text(
-          "Payment failed",
-        ),
-      ),
-    );
+    onError();
   }
-
   void externalWallet(
-      BuildContext context,
       ExternalWalletResponse response,
       ) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(
-      SnackBar(
-        content: Text(
-          "External wallet selected",
-        ),
-      ),
-    );
+    onExternalWallet();
   }
-
-  Future confirmPayment(
-      BuildContext context,
-      ) async {
-    if (_model.paymentMethod ==
-        "Cash") {
+  Future<void> cashPayment() async {
+    try {
+      changeLoading(
+        true,
+      );
       await addSale(
         "",
       );
 
       await updateStock();
-
-      if (!context.mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        SnackBar(
-          backgroundColor:
-          Colors.green,
-          content: Text(
-            "Payment completed successfully",
-          ),
-        ),
+      onSuccess();
+    } catch (e) {
+      onError();
+    } finally {
+      changeLoading(
+        false,
       );
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) =>
-              Bill(
-                billNo:
-                _model.billNo,
-                customerName:
-                _model.customerName,
-                customerMobile:
-                _model.customerMobile,
-                cart:
-                _model.cart,
-                totalAmount:
-                _model.totalAmount,
-                paymentMethod:
-                _model.paymentMethod,
-              ),
-        ),
-      );
+    }
+  }
+  Future<void> confirmPayment() async {
+    if (paymentMethod.isEmpty) {
+      return;
+    }
+    if (paymentMethod == "Cash") {
+      await cashPayment();
     } else {
       openRazorpay();
     }
   }
-
   @override
   void dispose() {
-    _repository.clearRazorpay();
+    razorpay.clear();
 
     super.dispose();
   }
