@@ -35,11 +35,9 @@ class AddtobillViewmodel extends ChangeNotifier {
     productSubscription = products.snapshots().listen(
           (snapshot) {
         allProducts = snapshot.docs;
-
         filterProducts();
-
+        updateCartStock();
         loading = false;
-
         notifyListeners();
       },
       onError: (error) {
@@ -68,6 +66,26 @@ class AddtobillViewmodel extends ChangeNotifier {
     ).toList();
   }
 
+  void updateCartStock() {
+    for (var item in cart) {
+      int productIndex = allProducts.indexWhere(
+            (product) => product.id == item['id'],
+      );
+
+      if (productIndex != -1) {
+        var data = allProducts[productIndex].data()
+        as Map<String, dynamic>;
+
+        double stock = double.tryParse(
+          data['pquantity']?.toString() ?? "0",
+        ) ??
+            0.0;
+
+        item['stock'] = stock;
+      }
+    }
+  }
+
   void changeCustomer(String value) {
     selectedcustomer = value;
     notifyListeners();
@@ -77,78 +95,180 @@ class AddtobillViewmodel extends ChangeNotifier {
     return unit.toLowerCase().trim() == "kg";
   }
 
-  void addtocart(
+  bool isOutOfStock(dynamic quantity) {
+    double stock = double.tryParse(
+      quantity.toString(),
+    ) ??
+        0.0;
+
+    return stock <= 0;
+  }
+
+  String formatStock(
+      dynamic quantity,
+      String unit,
+      ) {
+    double stock = double.tryParse(
+      quantity.toString(),
+    ) ??
+        0.0;
+
+    if (isKg(unit)) {
+      return stock
+          .toStringAsFixed(2)
+          .replaceAll(
+        RegExp(r'0+$'),
+        '',
+      )
+          .replaceAll(
+        RegExp(r'\.$'),
+        '',
+      );
+    }
+
+    return stock.toInt().toString();
+  }
+
+  String formatCartQty(
+      dynamic quantity,
+      String unit,
+      ) {
+    double qty = double.tryParse(
+      quantity.toString(),
+    ) ??
+        0.0;
+
+    if (isKg(unit)) {
+      return qty
+          .toStringAsFixed(2)
+          .replaceAll(
+        RegExp(r'0+$'),
+        '',
+      )
+          .replaceAll(
+        RegExp(r'\.$'),
+        '',
+      );
+    }
+
+    return qty.toInt().toString();
+  }
+
+  bool addtocart(
       String id,
       String name,
       String price,
       String unit,
       String mrp,
+      dynamic availableStock,
       ) {
+    double stock = double.tryParse(
+      availableStock.toString(),
+    ) ??
+        0.0;
+
+    if (stock <= 0) {
+      return false;
+    }
+
     int index = cart.indexWhere(
           (item) => item['id'] == id,
     );
 
     if (index != -1) {
-      double qty =
-          double.tryParse(
-            cart[index]['qty'].toString(),
-          ) ??
-              0.0;
+      double qty = double.tryParse(
+        cart[index]['qty'].toString(),
+      ) ??
+          0.0;
+
+      double newQty;
 
       if (isKg(unit)) {
-        qty = qty + 0.1;
+        newQty = qty + 0.1;
       } else {
-        qty = qty + 1;
+        newQty = qty + 1;
       }
 
-      cart[index]['qty'] =
-          double.parse(
-            qty.toStringAsFixed(2),
-          );
+      newQty = double.parse(
+        newQty.toStringAsFixed(2),
+      );
+
+      if (newQty > stock) {
+        return false;
+      }
+
+      cart[index]['qty'] = newQty;
+      cart[index]['stock'] = stock;
     } else {
+      double firstQty;
+
+      if (isKg(unit)) {
+        firstQty = 0.1;
+      } else {
+        firstQty = 1;
+      }
+
+      if (firstQty > stock) {
+        return false;
+      }
+
       cart.add({
         'id': id,
         'name': name,
         'price': price,
         'unit': unit,
-        'qty': isKg(unit) ? 0.1 : 1,
+        'qty': firstQty,
         'mrp': mrp,
+        'stock': stock,
       });
     }
 
     notifyListeners();
+    return true;
   }
 
-  void increseqty(int index) {
-    double qty =
-        double.tryParse(
-          cart[index]['qty'].toString(),
-        ) ??
-            0.0;
+  bool increseqty(int index) {
+    double qty = double.tryParse(
+      cart[index]['qty'].toString(),
+    ) ??
+        0.0;
+
+    double stock = double.tryParse(
+      cart[index]['stock'].toString(),
+    ) ??
+        0.0;
 
     String unit =
     cart[index]['unit'].toString();
 
+    double newQty;
+
     if (isKg(unit)) {
-      qty = qty + 0.1;
+      newQty = qty + 0.1;
     } else {
-      qty = qty + 1;
+      newQty = qty + 1;
     }
 
-    cart[index]['qty'] =
-        double.parse(
-          qty.toStringAsFixed(2),
-        );
+    newQty = double.parse(
+      newQty.toStringAsFixed(2),
+    );
+
+    if (newQty > stock) {
+      return false;
+    }
+
+    cart[index]['qty'] = newQty;
 
     notifyListeners();
+
+    return true;
   }
 
   void decreseqty(int index) {
-    double qty =
-        double.tryParse(
-          cart[index]['qty'].toString(),
-        ) ??
-            0.0;
+    double qty = double.tryParse(
+      cart[index]['qty'].toString(),
+    ) ??
+        0.0;
 
     String unit =
     cart[index]['unit'].toString();
@@ -163,35 +283,44 @@ class AddtobillViewmodel extends ChangeNotifier {
       }
     }
 
-    cart[index]['qty'] =
-        double.parse(
-          qty.toStringAsFixed(2),
-        );
+    cart[index]['qty'] = double.parse(
+      qty.toStringAsFixed(2),
+    );
 
     notifyListeners();
   }
 
-  void changeKgQty(
+  bool changeKgQty(
       int index,
       double qty,
       ) {
     String unit =
     cart[index]['unit'].toString();
 
+    double stock = double.tryParse(
+      cart[index]['stock'].toString(),
+    ) ??
+        0.0;
+
     if (!isKg(unit)) {
-      return;
+      return false;
     }
 
     if (qty <= 0) {
-      return;
+      return false;
     }
 
-    cart[index]['qty'] =
-        double.parse(
-          qty.toStringAsFixed(2),
-        );
+    if (qty > stock) {
+      return false;
+    }
+
+    cart[index]['qty'] = double.parse(
+      qty.toStringAsFixed(2),
+    );
 
     notifyListeners();
+
+    return true;
   }
 
   void itemdelete(int index) {
@@ -208,17 +337,15 @@ class AddtobillViewmodel extends ChangeNotifier {
     double total = 0.0;
 
     for (var item in cart) {
-      double price =
-          double.tryParse(
-            item['price'].toString(),
-          ) ??
-              0.0;
+      double price = double.tryParse(
+        item['price'].toString(),
+      ) ??
+          0.0;
 
-      double qty =
-          double.tryParse(
-            item['qty'].toString(),
-          ) ??
-              0.0;
+      double qty = double.tryParse(
+        item['qty'].toString(),
+      ) ??
+          0.0;
 
       total = total + (price * qty);
     }
@@ -239,13 +366,12 @@ class AddtobillViewmodel extends ChangeNotifier {
       var data =
       doc.data() as Map<String, dynamic>?;
 
-      int lastNumber =
-          int.tryParse(
-            data?['lastNumber']
-                ?.toString() ??
-                "0",
-          ) ??
-              0;
+      int lastNumber = int.tryParse(
+        data?['lastNumber']
+            ?.toString() ??
+            "0",
+      ) ??
+          0;
 
       number = lastNumber + 1;
 
@@ -304,10 +430,8 @@ class AddtobillViewmodel extends ChangeNotifier {
   @override
   void dispose() {
     productSubscription?.cancel();
-
     cusname.dispose();
     cusnum.dispose();
-
     super.dispose();
   }
 }
