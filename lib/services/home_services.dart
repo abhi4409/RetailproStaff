@@ -5,10 +5,12 @@ class HomeServices {
   FirebaseFirestore.instance.collection(
     'productsdata',
   );
+
   final CollectionReference<Map<String, dynamic>> sales =
   FirebaseFirestore.instance.collection(
     'sales',
   );
+
   final CollectionReference<Map<String, dynamic>> orders =
   FirebaseFirestore.instance.collection(
     'orders',
@@ -21,12 +23,8 @@ class HomeServices {
   Stream<QuerySnapshot<Map<String, dynamic>>> getSales() {
     return sales.snapshots();
   }
+
   Stream<QuerySnapshot<Map<String, dynamic>>> getOrders() {
-    return orders
-        .where(
-      'status',
-      isEqualTo: 'Order Placed',
-    )
-        .snapshots();
+    return orders.snapshots();
   }
 }

@@ -9,9 +9,11 @@ class HomeRepository {
   Stream<QuerySnapshot<Map<String, dynamic>>> getProducts() {
     return _services.getProducts();
   }
+
   Stream<QuerySnapshot<Map<String, dynamic>>> getSales() {
     return _services.getSales();
   }
+
   Stream<QuerySnapshot<Map<String, dynamic>>> getOrders() {
     return _services.getOrders();
   }
