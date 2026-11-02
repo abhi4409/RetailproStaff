@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/order_models.dart';
 import '../repository/order_repo.dart';
+
 class OrderViewmodel extends ChangeNotifier {
   final OrderModels _model = OrderModels();
   final OrderRepository _repository = OrderRepository();
@@ -26,45 +27,51 @@ class OrderViewmodel extends ChangeNotifier {
     });
   }
 
+  String getStatus(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+    return doc.data()['status']?.toString().trim().toLowerCase() ?? "";
+  }
+
   List<QueryDocumentSnapshot<Map<String, dynamic>>> get newOrders {
     return _model.allOrders.where((doc) {
-      final status = doc.data()['status']?.toString().trim();
-      return status == "Order Placed";
+      final status = getStatus(doc);
+      return status == "pending" ||
+          status == "order placed" ||
+          status == "placed";
     }).toList();
   }
 
   List<QueryDocumentSnapshot<Map<String, dynamic>>> get acceptedOrders {
     return _model.allOrders.where((doc) {
-      final status = doc.data()['status']?.toString().trim();
-      return status == "Accepted";
+      final status = getStatus(doc);
+      return status == "accepted" || status == "accept";
     }).toList();
   }
 
   List<QueryDocumentSnapshot<Map<String, dynamic>>> get readyOrders {
     return _model.allOrders.where((doc) {
-      final status = doc.data()['status']?.toString().trim();
-      return status == "Ready";
+      final status = getStatus(doc);
+      return status == "ready";
     }).toList();
   }
 
   List<QueryDocumentSnapshot<Map<String, dynamic>>> get completedOrders {
     return _model.allOrders.where((doc) {
-      final status = doc.data()['status']?.toString().trim();
-      return status == "Completed";
+      final status = getStatus(doc);
+      return status == "completed";
     }).toList();
   }
 
   List<QueryDocumentSnapshot<Map<String, dynamic>>> get rejectedOrders {
     return _model.allOrders.where((doc) {
-      final status = doc.data()['status']?.toString().trim();
-      return status == "Rejected";
+      final status = getStatus(doc);
+      return status == "rejected";
     }).toList();
   }
 
   Future<void> updateStatus(
-      String orderId,
-      String status,
-      ) async {
+    String orderId,
+    String status,
+  ) async {
     await _repository.updateStatus(
       orderId,
       status,
