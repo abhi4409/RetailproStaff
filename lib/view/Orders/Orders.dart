@@ -64,7 +64,7 @@ class _Online_ordersState extends State<Online_orders> {
         ),
         body: TabBarView(
           children: [
-            Neworder(),
+            Neworders(),
             Accep(),
             Readyorder(),
             Completee(),

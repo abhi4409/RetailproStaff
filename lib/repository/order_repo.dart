@@ -3,8 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/order_services.dart';
 
 class OrderRepository {
-  final OrderServices _services =
-  OrderServices();
+  final OrderServices _services = OrderServices();
 
   Stream<QuerySnapshot<Map<String, dynamic>>> getOrders() {
     return _services.getOrders();

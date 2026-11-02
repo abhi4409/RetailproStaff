@@ -2,9 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class OrderServices {
   final CollectionReference<Map<String, dynamic>> orders =
-  FirebaseFirestore.instance.collection(
-    'orders',
-  );
+  FirebaseFirestore.instance.collection('orders');
 
   Stream<QuerySnapshot<Map<String, dynamic>>> getOrders() {
     return orders.snapshots();

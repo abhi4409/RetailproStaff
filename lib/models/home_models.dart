@@ -5,10 +5,13 @@ class HomeModels {
   int lowStock;
   int billCount;
   double todaySales;
+
   List<QueryDocumentSnapshot<Map<String, dynamic>>> newOrders;
+
   bool productLoading;
   bool salesLoading;
   bool orderLoading;
+
   HomeModels({
     this.productCount = 0,
     this.lowStock = 0,

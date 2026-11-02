@@ -56,22 +56,32 @@ class HomeViewmodel extends ChangeNotifier {
       _model.productLoading ||
           _model.salesLoading;
 
-  double getDouble(dynamic value) {
+  double getDouble(
+      dynamic value,
+      ) {
     return double.tryParse(
       value?.toString() ?? '0',
     ) ??
         0.0;
   }
 
+  String getStatus(
+      Map<String, dynamic> data,
+      ) {
+    return data['status']
+        ?.toString()
+        .trim()
+        .toLowerCase() ??
+        '';
+  }
+
   bool isNewOrder(
       Map<String, dynamic> data,
       ) {
     String status =
-        data['status']
-            ?.toString()
-            .trim()
-            .toLowerCase() ??
-            '';
+    getStatus(
+      data,
+    );
 
     return status == 'pending' ||
         status == 'order placed' ||
@@ -92,7 +102,7 @@ class HomeViewmodel extends ChangeNotifier {
 
             for (var product
             in snapshot.docs) {
-              var data =
+              Map<String, dynamic> data =
               product.data();
 
               double quantity =
@@ -136,7 +146,7 @@ class HomeViewmodel extends ChangeNotifier {
 
             for (var sale
             in snapshot.docs) {
-              var data =
+              Map<String, dynamic> data =
               sale.data();
 
               double amount =
@@ -177,14 +187,41 @@ class HomeViewmodel extends ChangeNotifier {
             .getOrders()
             .listen(
               (snapshot) {
+            List<QueryDocumentSnapshot<Map<String, dynamic>>>
+            pendingOrders =
+            [];
+
+            for (var doc
+            in snapshot.docs) {
+              Map<String, dynamic> data =
+              doc.data();
+
+              String status =
+              getStatus(
+                data,
+              );
+
+              if (status == 'pending' ||
+                  status == 'order placed' ||
+                  status == 'placed') {
+                pendingOrders.add(
+                  doc,
+                );
+              }
+            }
+
             _model.newOrders =
-                snapshot.docs.where(
-                      (doc) {
-                    return isNewOrder(
-                      doc.data(),
-                    );
-                  },
-                ).toList();
+                pendingOrders;
+
+            _model.orderLoading =
+            false;
+
+            notifyListeners();
+          },
+          onError: (error) {
+            print(
+              "ORDER ERROR: $error",
+            );
 
             _model.orderLoading =
             false;

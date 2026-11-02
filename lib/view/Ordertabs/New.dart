@@ -4,221 +4,335 @@ import 'package:provider/provider.dart';
 import '../../viewmodel/order_viewmodel.dart';
 import '../Orders/Vieworder.dart';
 
-class Neworder extends StatefulWidget {
-  Neworder({
+class Neworders extends StatefulWidget {
+  const Neworders({
     super.key,
   });
 
   @override
-  State<Neworder> createState() => _NeworderState();
+  State<Neworders> createState() => _NewordersState();
 }
 
-class _NeworderState extends State<Neworder> {
+class _NewordersState extends State<Neworders> {
+  double getDouble(dynamic value) {
+    return double.tryParse(
+      value?.toString() ?? '0',
+    ) ??
+        0.0;
+  }
+
   @override
   Widget build(BuildContext context) {
-    var provider = Provider.of<OrderViewmodel>(
+    final provider =
+    Provider.of<OrderViewmodel>(
       context,
     );
 
-    var docs = provider.newOrders;
-
-    return Scaffold(
-      body: provider.loading
-          ? Center(
+    if (provider.loading) {
+      return Center(
         child: CircularProgressIndicator(),
-      )
-          : docs.isEmpty
-          ? Center(
+      );
+    }
+
+    if (provider.newOrders.isEmpty) {
+      return Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment:
+          MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.inbox_outlined,
-              size: 64,
+              Icons.shopping_bag_outlined,
+              size: 70,
               color: Colors.grey.shade400,
             ),
-            SizedBox(height: 12),
+            SizedBox(
+              height: 15,
+            ),
             Text(
               "No New Orders",
               style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
                 color: Colors.grey.shade600,
               ),
             ),
           ],
         ),
-      )
-          : ListView.builder(
-        padding: EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
-        ),
-        itemCount: docs.length,
-        itemBuilder: (context, index) {
-          final snap = docs[index];
-          var data = snap.data();
-          List items = data['items'] is List ? data['items'] : [];
+      );
+    }
 
-          return Card(
-            elevation: 2,
-            margin: EdgeInsets.only(bottom: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+    return ListView.builder(
+      padding: EdgeInsets.all(12),
+      itemCount: provider.newOrders.length,
+      itemBuilder: (
+          context,
+          index,
+          ) {
+        final snap =
+        provider.newOrders[index];
+
+        final data =
+        snap.data();
+
+        final List items =
+        data['items'] is List
+            ? data['items']
+            : [];
+
+        String orderNo =
+            data['orderNo']
+                ?.toString() ??
+                "";
+
+        String customerName =
+            data['customerName']
+                ?.toString() ??
+                "Customer";
+
+        String customerPhone =
+            data['customerPhone']
+                ?.toString() ??
+                "";
+
+        String status =
+            data['status']
+                ?.toString() ??
+                "Pending";
+
+        double totalAmount =
+        getDouble(
+          data['totalAmount'],
+        );
+
+        return Card(
+          margin: EdgeInsets.only(
+            bottom: 12,
+          ),
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius:
+            BorderRadius.circular(
+              15,
             ),
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CircleAvatar(
-                        radius: 24,
-                        backgroundColor: Colors.blue.shade50,
-                        child: Icon(
-                          Icons.inventory_2,
-                          color: Colors.blue,
-                          size: 26,
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(
+              15,
+            ),
+            child: Column(
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment:
+                  MainAxisAlignment
+                      .spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        orderNo,
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight:
+                          FontWeight.bold,
                         ),
                       ),
-                      SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              data['orderNo']?.toString() ?? "",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              data['customerName']?.toString() ??
-                                  "Customer",
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey.shade700,
-                              ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              "${items.length} items",
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
+                    ),
+                    Container(
+                      padding:
+                      EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration:
+                      BoxDecoration(
+                        color: Colors
+                            .orange.shade50,
+                        borderRadius:
+                        BorderRadius.circular(
+                          20,
                         ),
                       ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            "₹${data['totalAmount']?.toString() ?? '0'}",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                              color: Colors.green.shade800,
-                            ),
-                          ),
-                          SizedBox(height: 6),
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.orange.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: Colors.orange.shade300,
-                              ),
-                            ),
-                            child: Text(
-                              "New",
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.orange.shade800,
-                              ),
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        status,
+                        style: TextStyle(
+                          color: Colors
+                              .orange.shade800,
+                          fontWeight:
+                          FontWeight.w600,
+                        ),
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+
+                SizedBox(
+                  height: 15,
+                ),
+
+                Row(
+                  children: [
+                    Icon(
+                      Icons.person_outline,
+                      size: 20,
+                      color:
+                      Colors.grey.shade700,
+                    ),
+                    SizedBox(
+                      width: 8,
+                    ),
+                    Expanded(
+                      child: Text(
+                        customerName,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight:
+                          FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                if (customerPhone
+                    .isNotEmpty) ...[
+                  SizedBox(
+                    height: 8,
                   ),
-                  SizedBox(height: 16),
                   Row(
                     children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => Orderdetails(
-                                  orderId: snap.id,
-                                ),
-                              ),
-                            );
-                          },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.green,
-                            side: BorderSide(color: Colors.green),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            padding:
-                            EdgeInsets.symmetric(vertical: 11),
-                          ),
-                          child: Text(
-                            "View Details",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
+                      Icon(
+                        Icons.phone_outlined,
+                        size: 20,
+                        color:
+                        Colors.grey.shade700,
                       ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            await provider.updateStatus(
-                              snap.id,
-                              "Accepted",
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            padding:
-                            EdgeInsets.symmetric(vertical: 11),
-                          ),
-                          child: Text(
-                            "Accept",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                      SizedBox(
+                        width: 8,
+                      ),
+                      Text(
+                        customerPhone,
+                        style: TextStyle(
+                          fontSize: 14,
                         ),
                       ),
                     ],
                   ),
                 ],
-              ),
+
+                SizedBox(
+                  height: 8,
+                ),
+
+                Row(
+                  children: [
+                    Icon(
+                      Icons.shopping_cart_outlined,
+                      size: 20,
+                      color:
+                      Colors.grey.shade700,
+                    ),
+                    SizedBox(
+                      width: 8,
+                    ),
+                    Text(
+                      "${items.length} items",
+                      style: TextStyle(
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+
+                SizedBox(
+                  height: 15,
+                ),
+
+                Divider(),
+
+                SizedBox(
+                  height: 5,
+                ),
+
+                Row(
+                  mainAxisAlignment:
+                  MainAxisAlignment
+                      .spaceBetween,
+                  children: [
+                    Text(
+                      "Total Amount",
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight:
+                        FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      "₹${totalAmount.toStringAsFixed(2)}",
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight:
+                        FontWeight.bold,
+                        color:
+                        Colors.green.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+
+                SizedBox(
+                  height: 15,
+                ),
+
+                SizedBox(
+                  width: double.infinity,
+                  child:
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (
+                              context,
+                              ) =>
+                              Orderdetails(
+                                orderId:
+                                snap.id,
+                              ),
+                        ),
+                      );
+                    },
+                    icon: Icon(
+                      Icons.visibility_outlined,
+                    ),
+                    label: Text(
+                      "View Details",
+                    ),
+                    style:
+                    ElevatedButton.styleFrom(
+                      backgroundColor:
+                      Colors.blue,
+                      foregroundColor:
+                      Colors.white,
+                      padding:
+                      EdgeInsets.symmetric(
+                        vertical: 13,
+                      ),
+                      shape:
+                      RoundedRectangleBorder(
+                        borderRadius:
+                        BorderRadius.circular(
+                          10,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }
