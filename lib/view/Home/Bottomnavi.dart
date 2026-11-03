@@ -24,14 +24,20 @@ class _BottomnavigaState extends State<Bottomnaviga> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      bottomNavigationBar:  BottomNavigationBar(
-        currentIndex: Selected,
+      bottomNavigationBar: BottomNavigationBar(
+          currentIndex: Selected,
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.blueGrey.shade900,
+          selectedItemColor: Colors.lightBlueAccent,
+          unselectedItemColor: Colors.white70,
+          selectedLabelStyle: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
           onTap: (index){
           setState(() {
             Selected=index;
           });
           },
-          backgroundColor: Colors.black,
           items: [
         BottomNavigationBarItem(
             icon: Icon(Icons.home),
